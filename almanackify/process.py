@@ -30,7 +30,8 @@ BAD_START = set(
     "pero y o sino aunque además también entonces así esto eso ello él ella ellos ellas le les esta este ese esa estos esos "
     "aquello aquí allí bueno hmm because porque imagine imagina remember recuerda consider suppose suppongamos let here’s here's lets "
     "but and or so then also this that these those he she they it his her their its such yet though although however thus hence "
-    "moreover furthermore instead otherwise still".split()
+    "moreover furthermore instead otherwise still "
+    "firstly secondly thirdly fourthly fifthly sixthly finally lastly primero segundo tercero cuarto quinto finalmente".split()
 )
 BAD_PREFIX = re.compile(
     r"^(por ejemplo|sin embargo|por lo tanto|por eso|en cambio|es decir|en efecto|de hecho|para eso|"
@@ -44,7 +45,7 @@ GENERAL = set(
 )
 # Frases que apuntan a algo dicho antes: no se entienden como cajita suelta.
 BACK_REFERENCE = re.compile(
-    r"\b(this|these|those|above|below|earlier|aforementioned|for example|for instance|the former|the latter|"
+    r"\b(this|these|those|such|above|below|earlier|aforementioned|for example|for instance|the former|the latter|"
     r"este|esta|estos|estas|esto|aquel|aquella|arriba|abajo|por ejemplo)\b",
     re.I,
 )

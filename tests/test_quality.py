@@ -31,9 +31,20 @@ class StandaloneBoxes(unittest.TestCase):
         ):
             self.assertIsNone(process.aphorism(s, "en"), s)
 
+    def test_such_is_a_back_reference(self):
+        s = "The soul always hears an admonition in such lines, let the subject be what it may."
+        self.assertIsNone(process.aphorism(s, "en"))
+
     def test_spanish_back_reference_is_not_a_box(self):
         s = "Aprender es un ejemplo de este fenómeno: cuanto más sabés, más fácil es aprender."
         self.assertIsNone(process.aphorism(s, "es"))
+
+    def test_list_ordinals_are_not_boxes(self):
+        for s in (
+            "Fourthly, when it plays a part, and does or says anything insincerely and untruly.",
+            "Secondly, a person should always weigh the cost of every promise they make.",
+        ):
+            self.assertIsNone(process.aphorism(s, "en"), s)
 
     def test_standalone_aphorisms_still_qualify(self):
         for s in (

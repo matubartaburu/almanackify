@@ -7,6 +7,8 @@ import uuid
 from pathlib import Path
 
 FONT_DIR = Path(__file__).parent / "fonts"
+STATIC_FONT_DIR = FONT_DIR / "static"  # versiones no variables (el Kindle falla con fuentes variables)
+STATIC_FONTS = [("Regular", 400, "normal"), ("Bold", 700, "normal"), ("Italic", 400, "italic"), ("BoldItalic", 700, "italic")]
 FONT_STACK = '"EB Garamond", "Adobe Garamond Pro", Garamond, "Times New Roman", "Liberation Serif", serif'
 
 LABELS = {
@@ -89,7 +91,55 @@ def _title_html(book: dict) -> str:
 
 
 # ----------------------------------------------------------------------------
-def to_epub(book: dict, path: str, embed_font: bool = False) -> str:
+def _cover_quote(book: dict, max_chars: int = 170) -> str:
+    """La cajita más 'tuiteable' que entre en la portada (si ninguna puntúa, la primera corta)."""
+    from .process import aphorism
+
+    best, best_score = "", -1.0
+    for ch in book["chapters"]:
+        for b in ch["blocks"]:
+            if b["type"] != "tweet" or len(b["text"]) > max_chars:
+                continue
+            score = aphorism(b["text"], book.get("lang") or "en")
+            score = -0.5 if score is None else score
+            if score > best_score:
+                best, best_score = b["text"], score
+    return best
+
+
+def make_cover(book: dict) -> bytes:
+    """Portada minimalista (JPEG 1600x2560): título, autor y una cajita con una idea del libro."""
+    import pymupdf
+    from weasyprint import HTML
+
+    faces = "".join(
+        f'@font-face {{ font-family: "EB Garamond"; src: url("{(STATIC_FONT_DIR / f"EBGaramond-{n}.ttf").as_uri()}"); '
+        f"font-weight: {w}; font-style: {s}; }}\n" for n, w, s in STATIC_FONTS
+        if (STATIC_FONT_DIR / f"EBGaramond-{n}.ttf").exists()
+    )
+    lab = LABELS.get(book.get("lang", "en"), LABELS["en"])
+    author = f'<p class="by">{html.escape(book["author"])}</p>' if book.get("author") else ""
+    quote = _cover_quote(book)
+    box = f'<div class="box">{inline(quote)}</div>' if quote else ""
+    doc = f"""<!doctype html><html><head><meta charset="utf-8"><style>
+    {faces}
+    @page {{ size: 6.25in 10in; margin: 0; }}
+    html, body {{ margin: 0; background: #fff; }}
+    .cv {{ box-sizing: border-box; width: 6.25in; height: 10in; padding: .8in .7in; font-family: {FONT_STACK};
+           color: #111; display: flex; flex-direction: column; }}
+    h1 {{ font-size: 40pt; line-height: 1.05; text-transform: uppercase; font-weight: 700; margin: 0; }}
+    .by {{ font-size: 16pt; margin: .35in 0 0 0; }}
+    .sp {{ flex: 1; }}
+    .box {{ background: #ddd; padding: .3in .28in; font-size: 17pt; line-height: 1.32; margin-bottom: .6in; }}
+    .tag {{ font-size: 9pt; letter-spacing: .22em; text-transform: uppercase; }}
+    </style></head><body><div class="cv"><h1>{inline(book["title"])}</h1>{author}<div class="sp"></div>{box}
+    <div class="tag">Almanackify</div></div></body></html>"""
+    pdf = HTML(string=doc).write_pdf()
+    page = pymupdf.open(stream=pdf, filetype="pdf")[0]
+    return page.get_pixmap(dpi=256).tobytes("jpeg")
+
+
+def to_epub(book: dict, path: str, embed_font: bool = True) -> str:
     from ebooklib import epub
 
     lang = book.get("lang") or "en"
@@ -99,8 +149,18 @@ def to_epub(book: dict, path: str, embed_font: bool = False) -> str:
     eb.set_language(lang)
     if book.get("author"):
         eb.add_author(book["author"])
-    css = epub.EpubItem(uid="style", file_name="style/almanack.css", media_type="text/css", content=BASE_CSS)
+    fonts_css = ""
+    if embed_font and all((STATIC_FONT_DIR / f"EBGaramond-{n}.ttf").exists() for n, _, _ in STATIC_FONTS):
+        for name, _, _ in STATIC_FONTS:
+            eb.add_item(epub.EpubItem(uid=f"font-{name.lower()}", file_name=f"fonts/EBGaramond-{name}.ttf",
+                                      media_type="font/ttf", content=(STATIC_FONT_DIR / f"EBGaramond-{name}.ttf").read_bytes()))
+        fonts_css = "".join(
+            f'@font-face {{ font-family: "EB Garamond"; src: url("../fonts/EBGaramond-{n}.ttf"); '
+            f"font-weight: {w}; font-style: {s}; }}\n" for n, w, s in STATIC_FONTS
+        )
+    css = epub.EpubItem(uid="style", file_name="style/almanack.css", media_type="text/css", content=fonts_css + BASE_CSS)
     eb.add_item(css)
+    eb.set_cover("images/cover.jpg", make_cover(book), create_page=False)
 
     items = []
     tp = epub.EpubHtml(title=book["title"], file_name="title.xhtml", lang=lang)
