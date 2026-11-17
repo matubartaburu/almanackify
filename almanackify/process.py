@@ -42,6 +42,12 @@ GENERAL = set(
     "never always everything everyone nobody every only best worst must should can cannot nothing anything "
     "most more less without rather".split()
 )
+# Frases que apuntan a algo dicho antes: no se entienden como cajita suelta.
+BACK_REFERENCE = re.compile(
+    r"\b(this|these|those|above|below|earlier|aforementioned|for example|for instance|the former|the latter|"
+    r"este|esta|estos|estas|esto|aquel|aquella|arriba|abajo|por ejemplo)\b",
+    re.I,
+)
 MIN_APHO = 0.55
 PAST_WORDS = set("was were had did said went became got made took came saw knew thought told asked fue fueron era eran tuvo hizo dijo".split())
 FIRST_PERSON = re.compile(r"\b(yo|me|mi|mis|conmigo|I|I’m|I'm|I’ve|I've|I’d|I'd|my|me|myself|we|our|nos|nuestro)\b")
@@ -96,7 +102,7 @@ def aphorism(s: str, lang: str) -> float | None:
     if plain.count("“") != plain.count("”") or plain.count("(") != plain.count(")"):
         return None
     first = re.sub(r"^[\"“‘'(¿¡]+", "", words[0]).lower().rstrip(",;:")
-    if first in BAD_START or BAD_PREFIX.match(plain):
+    if first in BAD_START or BAD_PREFIX.match(plain) or BACK_REFERENCE.search(plain):
         return None
     if re.match(r"^[a-záéíóúñ]", plain):  # empieza en minúscula: fragmento
         return None
