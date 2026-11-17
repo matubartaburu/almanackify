@@ -1,0 +1,10 @@
+pymupdf
+ebooklib
+beautifulsoup4
+lxml
+weasyprint
+scikit-learn
+numpy
+trafilatura
+youtube-transcript-api
+mcp
