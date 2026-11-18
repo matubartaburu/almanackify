@@ -91,8 +91,8 @@ def _title_html(book: dict) -> str:
 
 
 # ----------------------------------------------------------------------------
-def _cover_quote(book: dict, max_chars: int = 170) -> str:
-    """La cajita más 'tuiteable' que entre en la portada (si ninguna puntúa, la primera corta)."""
+def _cover_quote(book: dict, max_chars: int = 120) -> str:
+    """La cajita más 'tuiteable' y corta que entre en la portada (si ninguna es corta, se aceptan hasta 170)."""
     from .process import aphorism
 
     best, best_score = "", -1.0
@@ -104,7 +104,7 @@ def _cover_quote(book: dict, max_chars: int = 170) -> str:
             score = -0.5 if score is None else score
             if score > best_score:
                 best, best_score = b["text"], score
-    return best
+    return best or (_cover_quote(book, 170) if max_chars < 170 else "")
 
 
 def make_cover(book: dict) -> bytes:

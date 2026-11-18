@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Almanackify — turn anything you read into a pocket Almanack</title>
+<meta name="description" content="Paste a link, a transcript or a book. Get short paragraphs, bold questions and idea boxes, as an EPUB for your Kindle.">
+<style>
+@font-face { font-family: "EB Garamond"; src: url("fonts/EBGaramond-Regular.ttf"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "EB Garamond"; src: url("fonts/EBGaramond-Bold.ttf"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "EB Garamond"; src: url("fonts/EBGaramond-Italic.ttf"); font-weight: 400; font-style: italic; font-display: swap; }
+:root {
+  --bg: #fbfbf9; --fg: #111; --mute: #6c6c68; --line: #e6e6e1; --box: #ddd; --card: #fff; --ink: #111; --ink-fg: #fff;
+  --serif: "EB Garamond", Garamond, "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0d0d0d; --fg: #f3f3ef; --mute: #9b9b95; --line: #232323; --box: #1f1f1f; --card: #141414; --ink: #f3f3ef; --ink-fg: #0d0d0d; }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--serif); font-size: 19px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+header { display: flex; align-items: center; justify-content: space-between; padding: 28px 0; }
+.mark { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; letter-spacing: .01em; text-decoration: none; }
+.mark i { width: 14px; height: 14px; background: var(--box); border: 1px solid var(--line); display: block; }
+nav a { font-family: var(--sans); font-size: 14px; color: var(--mute); text-decoration: none; margin-left: 20px; }
+nav a:hover { color: var(--fg); }
+nav a[hidden] { display: none; }
+
+.eyebrow { font-family: var(--sans); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); margin: 56px 0 18px; }
+h1 { font-weight: 400; font-size: clamp(40px, 8vw, 72px); line-height: 1.1; letter-spacing: -.02em; margin: 0 0 22px; }
+/* la caja cubre solo la parte baja de la línea para no tapar los descendentes de la línea anterior */
+h1 .hl { background: linear-gradient(var(--box), var(--box)) 0 88% / 100% 74% no-repeat; padding: 0 .14em; margin: 0 -.14em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.lead { font-size: 22px; color: var(--mute); max-width: 560px; margin: 0 0 36px; }
+
+.tabs { display: inline-flex; gap: 4px; font-family: var(--sans); font-size: 13px; margin-bottom: 10px; }
+.tabs button { all: unset; cursor: pointer; padding: 6px 12px; border-radius: 999px; color: var(--mute); }
+.tabs button[aria-selected="true"] { background: var(--box); color: var(--fg); }
+.tabs button:focus-visible, .btn:focus-visible, .chip:focus-visible, .pill:focus-within { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+.field { display: flex; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 8px; box-shadow: 0 1px 0 rgba(0,0,0,.03), 0 12px 32px -18px rgba(0,0,0,.18); transition: border-color .15s; }
+.field:focus-within { border-color: var(--fg); }
+.field input[type=url], .field textarea { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--fg); font: 400 18px var(--sans); padding: 12px 14px; }
+.field textarea { resize: vertical; min-height: 120px; line-height: 1.5; }
+.field input::placeholder, .field textarea::placeholder { color: #9a9a94; }
+.drop { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 64px; border: 1px dashed var(--line); border-radius: 10px; color: var(--mute); font: 400 16px var(--sans); cursor: pointer; text-align: center; padding: 8px 14px; }
+.drop.over { border-color: var(--fg); color: var(--fg); }
+.btn { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 500 15px var(--sans); background: var(--ink); color: var(--ink-fg); padding: 0 22px; min-height: 48px; border-radius: 11px; white-space: nowrap; transition: transform .12s, opacity .15s; }
+.btn:hover { opacity: .88; } .btn:active { transform: scale(.98); }
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+.btn[disabled] { opacity: .45; cursor: progress; }
+.field.multi { flex-wrap: wrap; align-items: flex-end; }
+.field.multi .btn { margin-left: auto; }
+
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; font-family: var(--sans); font-size: 13px; color: var(--mute); }
+.pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; user-select: none; }
+.pill input { accent-color: var(--ink); margin: 0; }
+.chip { all: unset; cursor: pointer; border-bottom: 1px solid var(--line); color: var(--fg); }
+.chip:hover { border-color: var(--fg); }
+.sel { font: inherit; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; }
+.err { font-family: var(--sans); font-size: 14px; color: #b3261e; margin-top: 12px; min-height: 20px; }
+@media (prefers-color-scheme: dark) { .err { color: #ff8a80; } }
+
+/* stepper */
+.steps { list-style: none; padding: 0; margin: 28px 0 0; display: none; font-family: var(--sans); font-size: 14px; color: var(--mute); }
+.steps.on { display: block; }
+.steps li { display: flex; align-items: center; gap: 12px; padding: 7px 0; opacity: .45; transition: opacity .3s; }
+.steps li::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--mute); flex: none; }
+.steps li.now { opacity: 1; color: var(--fg); } .steps li.now::before { border-color: var(--fg); background: var(--fg); animation: pulse 1s infinite; }
+.steps li.done { opacity: .8; } .steps li.done::before { background: var(--mute); border-color: var(--mute); }
+@keyframes pulse { 50% { transform: scale(1.45); opacity: .5; } }
+
+/* result */
+#result { display: none; margin-top: 44px; animation: up .4s ease both; }
+#result.on { display: block; }
+@keyframes up { from { opacity: 0; transform: translateY(10px); } }
+.book { display: grid; grid-template-columns: 190px 1fr; gap: 32px; align-items: start; }
+.cover { width: 100%; aspect-ratio: 5 / 8; object-fit: cover; border: 1px solid var(--line); box-shadow: 0 18px 40px -22px rgba(0,0,0,.45); background: var(--card); }
+.book h2 { font-size: 34px; line-height: 1.08; margin: 0 0 6px; letter-spacing: -.01em; }
+.meta { font-family: var(--sans); font-size: 13px; color: var(--mute); margin: 0 0 22px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+details.kindle { margin-top: 24px; font-family: var(--sans); font-size: 14.5px; color: var(--mute); }
+details.kindle summary { cursor: pointer; color: var(--fg); font-weight: 500; }
+details.kindle ol { margin: 12px 0 0; padding-left: 20px; } details.kindle li { margin: 6px 0; }
+.ideas { margin-top: 40px; }
+.ideas h3 { font: 500 12px var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--mute); margin: 0 0 14px; }
+.idea { background: var(--box); padding: 16px 18px; margin: 0 0 12px; font-size: 20px; line-height: 1.35; }
+
+.local { display: none; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; font-family: var(--sans); font-size: 15px; color: var(--mute); }
+.local.on { display: block; }
+.local code { display: block; background: var(--box); color: var(--fg); padding: 14px 16px; margin-top: 12px; font: 400 14px ui-monospace, SFMono-Regular, Menlo, monospace; overflow-x: auto; }
+footer { font-family: var(--sans); font-size: 13px; color: var(--mute); padding: 64px 0 48px; border-top: 1px solid var(--line); margin-top: 72px; }
+footer p { margin: 4px 0; }
+@media (max-width: 640px) {
+  body { font-size: 18px; } .lead { font-size: 19px; }
+  .field { flex-direction: column; } .field .btn { width: 100%; margin: 0; }
+  .book { grid-template-columns: 1fr; } .cover { max-width: 200px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="mark" href="#"><i></i>Almanackify</a>
+    <nav><a id="repo" href="#" hidden>GitHub</a></nav>
+  </header>
+
+  <main>
+    <p class="eyebrow">Read lighter</p>
+    <h1>Turn anything you read into <span class="hl">a pocket Almanack.</span></h1>
+    <p class="lead">Paste a link, a transcript or a book. Get short paragraphs, bold questions and idea boxes — as an EPUB made for your Kindle.</p>
+
+    <section id="tool" aria-label="Converter">
+      <div class="tabs" role="tablist" aria-label="Source">
+        <button role="tab" id="t-link" aria-selected="true">Link</button>
+        <button role="tab" id="t-text" aria-selected="false">Text</button>
+        <button role="tab" id="t-file" aria-selected="false">File</button>
+      </div>
+
+      <form id="form" class="field" autocomplete="off">
+        <input id="in-link" type="url" inputmode="url" placeholder="Paste an article or YouTube link…" aria-label="Link" required>
+        <textarea id="in-text" placeholder="Paste a transcript, an essay, your notes…" aria-label="Text" hidden></textarea>
+        <label id="in-file" class="drop" hidden tabindex="0">
+          <span id="file-label">Drop an EPUB, PDF or .txt here — or click to choose</span>
+          <input type="file" id="file" accept=".epub,.pdf,.txt,.md,.srt,.vtt" hidden>
+        </label>
+        <button class="btn" id="go" type="submit">Convert →</button>
+      </form>
+
+      <div class="row">
+        <span>Output</span>
+        <label class="pill"><input type="checkbox" id="f-epub" checked> EPUB · Kindle</label>
+        <label class="pill"><input type="checkbox" id="f-pdf"> PDF</label>
+        <select class="sel" id="density" aria-label="Idea boxes">
+          <option value="330">Fewer boxes</option>
+          <option value="220" selected>Normal boxes</option>
+          <option value="140">More boxes</option>
+        </select>
+      </div>
+      <div class="row" id="examples">
+        <span>Try</span>
+        <button class="chip" type="button" data-title="Self-Reliance" data-author="Ralph Waldo Emerson" data-url="https://standardebooks.org/ebooks/ralph-waldo-emerson/essays/text/self-reliance">Self-Reliance — Emerson</button>
+        <button class="chip" type="button" data-title="Meditations, Book 2" data-author="Marcus Aurelius" data-url="https://standardebooks.org/ebooks/marcus-aurelius/meditations/george-long/text/book-2">Meditations, Book 2 — Marcus Aurelius</button>
+      </div>
+      <p class="err" id="err" role="alert" aria-live="polite"></p>
+
+      <ol class="steps" id="steps" aria-live="polite">
+        <li>Reading the source</li><li>Splitting into short paragraphs</li><li>Picking the ideas worth a box</li><li>Building your book</li>
+      </ol>
+    </section>
+
+    <section class="local" id="local">
+      <strong style="color:var(--fg)">This page is the interface — the engine runs on your computer.</strong>
+      <span id="local-sub"> Start it with:</span>
+      <code id="local-cmd">python -m almanackify.server</code>
+    </section>
+
+    <section id="result" aria-label="Result">
+      <div class="book">
+        <img id="cover" class="cover" alt="Book cover" hidden>
+        <div>
+          <h2 id="r-title"></h2>
+          <p class="meta" id="r-meta"></p>
+          <div class="actions" id="r-actions"></div>
+          <details class="kindle" open>
+            <summary>Read it on your Kindle</summary>
+            <ol>
+              <li>Download the EPUB.</li>
+              <li>Open <a href="https://www.amazon.com/sendtokindle" target="_blank" rel="noopener">amazon.com/sendtokindle</a> and drop the file in — or email it as an attachment to your <b>@kindle.com</b> address (your sender must be on Amazon's approved list).</li>
+              <li>It shows up in your Library in a few minutes. If your Kindle offers “Publisher Font”, leave it on to keep the Garamond look.</li>
+            </ol>
+          </details>
+        </div>
+      </div>
+      <div class="ideas"><h3>A few ideas from it</h3><div id="r-ideas"></div></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Everything runs on your machine; the only thing fetched is the link you paste.</p>
+    <p>The format is inspired by <i>The Almanack of Naval Ravikant</i> by Eric Jorgenson. Not affiliated or endorsed. Convert only what you have the right to read.</p>
+  </footer>
+</div>
+
+<script>
+const REPO_URL = "";  // set when the repository is public
+const $ = (id) => document.getElementById(id);
+const H = { "X-Almanackify": "1" };
+let mode = "link", file = null, live = false;
+
+if (REPO_URL) { $("repo").href = REPO_URL; $("repo").hidden = false; }
+
+async function ping() {
+  try { const r = await fetch("api/health", { cache: "no-store" }); return r.ok && (await r.json()).ok; } catch { return false; }
+}
+function setMode(m) {
+  mode = m;
+  for (const k of ["link", "text", "file"]) {
+    $("t-" + k).setAttribute("aria-selected", k === m);
+    $("in-" + k).hidden = k !== m;
+  }
+  $("in-link").required = m === "link";
+  $("form").classList.toggle("multi", m === "text");
+  $("err").textContent = "";
+}
+for (const k of ["link", "text", "file"]) $("t-" + k).onclick = () => setMode(k);
+let example = null;  // título y autor de los ejemplos, para que no salga el nombre del sitio
+document.querySelectorAll(".chip").forEach((c) => c.onclick = () => { setMode("link"); example = c.dataset; $("in-link").value = c.dataset.url; $("in-link").focus(); });
+
+const drop = $("in-file");
+drop.onclick = () => $("file").click();
+drop.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } };
+drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); pick(e.dataTransfer.files[0]); };
+$("file").onchange = (e) => pick(e.target.files[0]);
+function pick(f) { if (!f) return; file = f; $("file-label").textContent = f.name + " — ready"; }
+
+function formats() { return [$("f-epub").checked && "epub", $("f-pdf").checked && "pdf"].filter(Boolean); }
+
+let timer;
+function stepper(on) {
+  const items = [...$("steps").children];
+  clearInterval(timer);
+  $("steps").classList.toggle("on", on);
+  if (!on) return items.forEach((li) => (li.className = ""));
+  let i = 0;
+  const paint = () => items.forEach((li, n) => (li.className = n < i ? "done" : n === i ? "now" : ""));
+  paint();
+  timer = setInterval(() => { if (i < items.length - 1) { i++; paint(); } }, 1400);
+}
+
+$("form").onsubmit = async (e) => {
+  e.preventDefault();
+  $("err").textContent = "";
+  const fm = formats();
+  if (!fm.length) return ($("err").textContent = "Pick EPUB, PDF or both.");
+  const every = Number($("density").value);
+  let req;
+  if (mode === "file") {
+    if (!file) return ($("err").textContent = "Choose a file first.");
+    req = fetch(`api/convert-file?formats=${fm.join(",")}&every=${every}`, { method: "POST", body: file, headers: { ...H, "X-Filename": encodeURIComponent(file.name) } });
+  } else {
+    const body = { formats: fm, every, [mode === "link" ? "source" : "text"]: (mode === "link" ? $("in-link") : $("in-text")).value };
+    if (mode === "link" && example && example.url === $("in-link").value.trim()) { body.title = example.title; body.author = example.author; }
+    req = fetch("api/convert", { method: "POST", body: JSON.stringify(body), headers: { ...H, "Content-Type": "application/json" } });
+  }
+  $("go").disabled = true; $("result").classList.remove("on"); stepper(true);
+  try {
+    const r = await req, data = await r.json();
+    if (!r.ok) throw new Error(data.error || "Something went wrong.");
+    show(data);
+  } catch (ex) { $("err").textContent = ex.message; }
+  finally { stepper(false); $("go").disabled = false; }
+};
+
+function show(d) {
+  $("r-title").textContent = d.title;
+  const s = d.stats || {};
+  $("r-meta").textContent = [s.words && `${s.words.toLocaleString()} words`, s.boxes != null && `${s.boxes} idea boxes`, d.lang && d.lang.toUpperCase()].filter(Boolean).join(" · ");
+  const cover = $("cover");
+  cover.hidden = !d.files.cover; if (d.files.cover) cover.src = d.files.cover;
+  const a = $("r-actions"); a.textContent = "";
+  for (const [k, label] of [["epub", "Download EPUB"], ["pdf", "Download PDF"]]) {
+    if (!d.files[k]) continue;
+    const el = document.createElement("a");
+    el.className = "btn" + (k === "pdf" && d.files.epub ? " ghost" : ""); el.href = d.files[k]; el.textContent = label + " ↓"; a.append(el);
+  }
+  const ideas = $("r-ideas"); ideas.textContent = "";
+  for (const t of d.boxes.slice(0, 5)) { const p = document.createElement("p"); p.className = "idea"; p.textContent = t; ideas.append(p); }
+  $("result").classList.add("on");
+  $("result").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+}
+
+(async () => {
+  live = await ping();
+  if (!live) { $("tool").style.display = "none"; $("local").classList.add("on"); }
+})();
+</script>
+</body>
+</html>

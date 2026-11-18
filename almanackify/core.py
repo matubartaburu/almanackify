@@ -10,6 +10,12 @@ from . import extract, process, render
 def build(source, output_dir="~/Almanackify", formats=("epub", "pdf"), chapter=None, limit_words=None,
           title=None, author=None, lang=None, box_every_words=220, chain=True, dedupe=False, save_json=True):
     book = extract.load(source, title=title, author=author, lang=lang)
+    return build_book(book, output_dir, formats, chapter, limit_words, box_every_words, chain, dedupe, save_json)
+
+
+def build_book(book, output_dir="~/Almanackify", formats=("epub", "pdf"), chapter=None, limit_words=None,
+               box_every_words=220, chain=True, dedupe=False, save_json=True):
+    """Igual que build() pero parte de un libro ya extraído (la API web nunca pasa rutas locales a load())."""
     book = extract.select_chapters(book, chapter=chapter, limit_words=limit_words)
     opts = process.Opts(box_every_words=box_every_words, chain=chain, dedupe=dedupe, lang=book.get("lang", "en"))
     processed = process.process(book, opts)

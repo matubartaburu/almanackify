@@ -4,3 +4,4 @@ __pycache__/
 salida/
 out/
 .DS_Store
+examples/*.json
