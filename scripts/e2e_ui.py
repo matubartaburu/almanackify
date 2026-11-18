@@ -74,7 +74,17 @@ def main():
         for d in ("Page", "DOM"):
             page.cdp(f"{d}.enable")
         page.cdp("Page.navigate", url=a.url)
-        time.sleep(2)
+        time.sleep(0.8)
+        if a.shots:
+            page.shot(os.path.join(a.shots, "intro.png"))  # la animación de entrada a mitad de camino
+        time.sleep(2.4)
+        # la repisa 3D está desde el inicio, antes de convertir nada
+        checks["shelf is on the page from the start"] = page.js("document.querySelectorAll('#shelf .b3').length") >= 2
+        checks["intro animation finished: every book fully visible"] = page.js("[...document.querySelectorAll('#shelf .b3')].every(b => getComputedStyle(b).opacity === '1')")
+        checks["shelf sits above the converter"] = page.js("document.getElementById('shelf').getBoundingClientRect().top < document.getElementById('tool').getBoundingClientRect().top")
+        checks["no download panel while only sample books are active"] = page.js("(document.querySelector('#shelf .b3.active img').src || '').includes('/demo/') ? !document.getElementById('result').classList.contains('on') : true")
+        if a.shots:
+            page.shot(os.path.join(a.shots, "home.png"))
 
         # ---- modo link + stepper ----
         checks["file zone hidden on the Link tab"] = page.js("document.getElementById('in-file').offsetParent === null")

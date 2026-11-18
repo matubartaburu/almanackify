@@ -1,0 +1,70 @@
+[
+ {
+  "slug": "self-reliance",
+  "title": "Self-Reliance",
+  "author": "Ralph Waldo Emerson",
+  "cover": "demo/self-reliance.jpg",
+  "boxes": [
+   "Nothing to him falls early or too late.",
+   "Not for nothing one face, one character, one fact, makes much impression on him, and another none."
+  ],
+  "stats": {
+   "chapters": 1,
+   "words": 10124,
+   "boxes": 37,
+   "chains": 1
+  },
+  "source": "https://standardebooks.org/ebooks/ralph-waldo-emerson/essays/text/self-reliance"
+ },
+ {
+  "slug": "shortness-of-life",
+  "title": "On the Shortness of Life",
+  "author": "Seneca",
+  "cover": "demo/shortness-of-life.jpg",
+  "boxes": [
+   "Life is long enough, if you know how to use it.",
+   "You fear everything, like mortals as you are, and yet you desire everything as if you were immortals."
+  ],
+  "stats": {
+   "chapters": 1,
+   "words": 10644,
+   "boxes": 7,
+   "chains": 0
+  },
+  "source": "https://standardebooks.org/ebooks/seneca/dialogues/aubrey-stewart/text/on-the-shortness-of-life"
+ },
+ {
+  "slug": "walden",
+  "title": "Walden: Economy",
+  "author": "Henry David Thoreau",
+  "cover": "demo/walden.jpg",
+  "boxes": [
+   "We commonly do not remember that it is, after all, always the first person that is speaking.",
+   "The finest qualities of our nature, like the bloom on fruits, can be preserved only by the most delicate handling."
+  ],
+  "stats": {
+   "chapters": 1,
+   "words": 9110,
+   "boxes": 25,
+   "chains": 1
+  },
+  "source": "https://standardebooks.org/ebooks/henry-david-thoreau/walden/text/economy"
+ },
+ {
+  "slug": "meditations-4",
+  "title": "Meditations: Book 4",
+  "author": "Marcus Aurelius",
+  "cover": "demo/meditations-4.jpg",
+  "boxes": [
+   "The universe is transformation: life is opinion.",
+   "Thou shalt disappear in that which produced thee; but rather thou shalt be received back into its seminal principle by transmutation."
+  ],
+  "stats": {
+   "chapters": 1,
+   "words": 4242,
+   "boxes": 12,
+   "chains": 1
+  },
+  "source": "https://standardebooks.org/ebooks/marcus-aurelius/meditations/george-long/text/book-4"
+ }
+]

@@ -136,6 +136,39 @@ class Api(unittest.TestCase):
         s, _, _ = self.call("GET", "/api/shelf", host="evil.example")
         self.assertEqual(s, 403)
 
+    def test_demo_assets_are_served(self):
+        s, ct, raw = self.call("GET", "/demo/books.json")
+        self.assertEqual(s, 200)
+        self.assertIn("json", ct)
+        books = json.loads(raw)
+        self.assertGreaterEqual(len(books), 3)
+        s, ct, data = self.call("GET", "/" + books[0]["cover"])
+        self.assertEqual((s, ct, data[:2]), (200, "image/jpeg", b"\xff\xd8"))
+        for bad in ("/demo/../server.py", "/demo/%2e%2e/server.py", "/demo/x.exe", "/demo/nope.jpg"):
+            s, _, _ = self.call("GET", bad)
+            self.assertIn(s, (400, 403, 404), bad)
+
+    def test_demo_books_are_complete_and_small(self):
+        demo = server.WEB_DIR / "demo"
+        for b in json.loads((demo / "books.json").read_text(encoding="utf8")):
+            cover = demo / Path(b["cover"]).name
+            self.assertTrue(cover.is_file(), cover)
+            self.assertLess(cover.stat().st_size, 60_000, cover)
+            self.assertGreaterEqual(len(b["boxes"]), 1, b["title"])
+            self.assertTrue(b["source"].startswith("https://standardebooks.org/"), "solo dominio público")
+
+    def test_third_party_cover_is_never_tracked_by_git(self):
+        import subprocess
+
+        try:
+            out = subprocess.run(["git", "ls-files", "almanackify/web/demo/almanack-cover.jpg"], cwd=server.WEB_DIR.parent.parent,
+                                 capture_output=True, text=True, timeout=20)
+        except (OSError, subprocess.SubprocessError):
+            self.skipTest("git no disponible")
+        if out.returncode != 0:
+            self.skipTest("no es un repositorio git")
+        self.assertEqual(out.stdout.strip(), "")
+
     def test_path_traversal_is_blocked(self):
         for p in ("/files/../../etc/hosts", "/files/..%2F..%2Fetc%2Fhosts", "/files/abc/../../x"):
             s, _, _ = self.call("GET", p)

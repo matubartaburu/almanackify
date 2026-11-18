@@ -80,6 +80,10 @@ class Handler(BaseHTTPRequestHandler):
         m = re.fullmatch(r"/fonts/(EBGaramond-(?:Regular|Bold|Italic|BoldItalic)\.ttf)", path)
         if m and (render.STATIC_FONT_DIR / m.group(1)).is_file():
             return self._send(200, (render.STATIC_FONT_DIR / m.group(1)).read_bytes(), "font/ttf")
+        m = re.fullmatch(r"/demo/([a-z0-9-]+\.(?:jpg|json))", path)  # libros de muestra de la portada (dominio público)
+        if m and (WEB_DIR / "demo" / m.group(1)).is_file():
+            f = WEB_DIR / "demo" / m.group(1)
+            return self._send(200, f.read_bytes(), MIME[f.suffix], {"Cache-Control": "public, max-age=3600"})
         m = re.fullmatch(r"/files/([0-9a-f]{12})/card-(\d{1,2})\.png", path)
         if m:
             card = self._card(self.server.jobs_dir / m.group(1), int(m.group(2)))

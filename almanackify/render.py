@@ -107,7 +107,7 @@ def _cover_quote(book: dict, max_chars: int = 120) -> str:
     return best or (_cover_quote(book, 170) if max_chars < 170 else "")
 
 
-def make_cover(book: dict) -> bytes:
+def make_cover(book: dict, dpi: int = 256) -> bytes:
     """Portada minimalista (JPEG 1600x2560): título, autor y una cajita con una idea del libro."""
     import pymupdf
     from weasyprint import HTML
@@ -136,7 +136,7 @@ def make_cover(book: dict) -> bytes:
     <div class="tag">Almanackify</div></div></body></html>"""
     pdf = HTML(string=doc).write_pdf()
     page = pymupdf.open(stream=pdf, filetype="pdf")[0]
-    return page.get_pixmap(dpi=256).tobytes("jpeg")
+    return page.get_pixmap(dpi=dpi).tobytes("jpeg")
 
 
 def make_card(text: str, title: str = "", author: str = "") -> bytes:

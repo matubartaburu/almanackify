@@ -9,3 +9,5 @@ build/
 *.egg-info/
 dist/
 launch/
+# tapa de un libro de terceros (arte del editor): solo para verla en local, nunca se versiona ni se empaqueta
+almanackify/web/demo/almanack-cover.*

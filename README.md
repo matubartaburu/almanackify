@@ -38,6 +38,8 @@ Tested on Python 3.14 (macOS). It is not on PyPI yet.
     almanackify-server                     # opens http://127.0.0.1:8742
 
 Paste a link, drop a file or paste text. You get a cover, the EPUB/PDF, and each idea box can be saved as a 16:9 image to share.
+The page opens on a 3D shelf: your converted books (newest in front, older ones by their spines) or, the first time, sample books
+made from public-domain texts. Click a book to open it; use the arrow keys to browse.
 
 **Command line:**
 
@@ -70,6 +72,8 @@ Honest status: it has been validated with EPUBCheck, but visual results on a phy
 `examples/almanackify-kindle-test.epub` is a short book that contains every block type and explains what you should see. Send it
 to your device and tell me what looks wrong.
 
+Sample books on the page are regenerated with `python scripts/build_demo.py` (public-domain texts from Standard Ebooks).
+
 ## Development
 
     pip install -e . -r requirements-dev.txt
@@ -90,4 +94,4 @@ your browser), checks the `Host` header, and only listens on `127.0.0.1`.
 ## Credits
 
 - **EB Garamond** by The EB Garamond Project Authors, SIL Open Font License 1.1 (`almanackify/fonts/OFL.txt`).
-- Interface patterns from [21st.dev](https://21st.dev), rewritten in plain CSS and JS: the vertical titled stepper (by sean0205), and the behavior of a "File Upload" component (a row for every file, rejected ones included; a drag counter that does not flicker). The DevTool Landing Page (by mokshithgujjeti) was studied for the walkthrough idea.
+- Interface patterns from [21st.dev](https://21st.dev), rewritten in plain CSS and JS: the vertical titled stepper (by sean0205), and the behavior of a "File Upload" component (a row for every file, rejected ones included; a drag counter that does not flicker). The DevTool Landing Page (by mokshithgujjeti) was studied for the walkthrough idea, and the 3D shelf was built from the preview of "3D Book Carousel Reading Mode" (by aloksivastava1025), not from its code.

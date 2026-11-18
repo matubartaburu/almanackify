@@ -30,4 +30,4 @@ almanackify-server = "almanackify.server:main"
 include = ["almanackify*"]
 
 [tool.setuptools.package-data]
-almanackify = ["web/*.html", "fonts/*.ttf", "fonts/static/*.ttf", "fonts/OFL.txt"]
+almanackify = ["web/*.html", "web/demo/*.jpg", "web/demo/*.json", "fonts/*.ttf", "fonts/static/*.ttf", "fonts/OFL.txt"]

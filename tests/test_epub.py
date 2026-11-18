@@ -63,6 +63,12 @@ class EpubForKindle(unittest.TestCase):
         ]}]}
         self.assertEqual(render._cover_quote(book), "Your goodness must have some edge to it, else it is none.")
 
+    def test_cover_resolution_is_configurable_for_small_previews(self):
+        import pymupdf
+
+        pix = pymupdf.Pixmap(render.make_cover(BOOK, dpi=64))
+        self.assertEqual((pix.width, pix.height), (400, 640))
+
     def test_idea_card_is_a_16_9_png(self):
         import pymupdf
 
