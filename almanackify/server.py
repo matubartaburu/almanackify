@@ -16,7 +16,9 @@ import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import core, extract, render
+import smtplib
+
+from . import core, extract, kindle, render
 
 WEB_DIR = Path(__file__).parent / "web"
 DEFAULT_JOBS = Path("~/.almanackify/web").expanduser()  # fuera del repo y de la carpeta de salida visible
@@ -75,6 +77,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, (WEB_DIR / "index.html").read_bytes(), "text/html; charset=utf-8")
         if path == "/api/health":
             return self._json(200, {"ok": True})
+        if path == "/api/config":  # solo si el envío por correo está configurado; nunca devuelve credenciales
+            return self._json(200, {"kindle_mail": kindle.smtp_config() is not None})
         if path == "/api/shelf":
             return self._json(200, {"books": self._shelf()})
         m = re.fullmatch(r"/fonts/(EBGaramond-(?:Regular|Bold|Italic|BoldItalic)\.ttf)", path)
@@ -145,6 +149,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if url.path == "/api/convert":
                 return self._convert_json()
+            if url.path == "/api/send-to-kindle":
+                return self._send_to_kindle()
             if url.path == "/api/convert-file":
                 return self._convert_file(urllib.parse.parse_qs(url.query))
         except ValueError as e:
@@ -152,6 +158,29 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001 - no filtrar trazas al navegador
             return self._error(500, f"Couldn't convert it ({type(e).__name__}).")
         return self._error(404, "Not found")
+
+    def _send_to_kindle(self):
+        raw = self._read_body(MAX_BODY)
+        try:
+            o = json.loads(raw or b"{}")
+        except json.JSONDecodeError:
+            return self._error(400, "Invalid JSON.")
+        job, to = str(o.get("job") or ""), str(o.get("to") or "").strip()
+        if not kindle.valid_kindle_address(to):
+            return self._error(400, "That doesn't look like a Kindle address (it should end in @kindle.com).", "bad_kindle_address")
+        cfg = kindle.smtp_config()
+        if cfg is None:
+            return self._error(400, "Email sending isn't set up yet. See “Send to Kindle by email” in the README.", "smtp_not_configured")
+        epubs = sorted((self.server.jobs_dir / job).glob("*.epub")) if JOB_RE.match(job) else []
+        if not epubs:
+            return self._error(404, "Convert the book to EPUB first.", "no_epub")
+        try:
+            kindle.send_epub(str(epubs[0]), to, cfg)
+        except smtplib.SMTPAuthenticationError:
+            return self._error(502, "Your email provider rejected the login. Check the app password.", "smtp_auth")
+        except (smtplib.SMTPException, OSError):
+            return self._error(502, "Couldn't send the email. Check the SMTP settings and your connection.", "smtp_error")
+        self._json(200, {"ok": True})
 
     def _formats(self, raw) -> tuple:
         fm = tuple(f for f in (raw or FORMATS) if f in FORMATS)

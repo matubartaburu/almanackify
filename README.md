@@ -74,6 +74,25 @@ to your device and tell me what looks wrong.
 
 Sample books on the page are regenerated with `python scripts/build_demo.py` (public-domain texts from Standard Ebooks).
 
+## Send to Kindle by email (optional)
+
+After converting, the page can email the EPUB straight to your Kindle. It does not use Login with Amazon (that only identifies you
+and has no permission to deliver books): it uses the `@kindle.com` address every Kindle has.
+
+1. In your Amazon account, find your Kindle's address (Content & Devices → Preferences → Personal Document Settings; menus may vary)
+   and add the email you will send *from* to the **Approved Personal Document E-mail List**.
+2. Give Almanackify that sender's SMTP settings through environment variables. Nothing is stored in the repo:
+
+       export ALMANACKIFY_SMTP_HOST=smtp.gmail.com
+       export ALMANACKIFY_SMTP_USER=you@gmail.com
+       export ALMANACKIFY_SMTP_PASSWORD="your app password"   # Gmail: a 16-character app password, not your normal one
+       almanackify-server
+
+3. Type your `@kindle.com` address once in the page (it stays in your browser) and press **Send to my Kindle**.
+
+Only `@kindle.com` and `@free.kindle.com` addresses are accepted, so the tool cannot be used to email anyone else.
+Status: the sending code is covered by tests with a fake mail server, but it has not been run against a real Kindle yet.
+
 ## Development
 
     pip install -e . -r requirements-dev.txt
