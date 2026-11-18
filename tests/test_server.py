@@ -103,6 +103,18 @@ class Api(unittest.TestCase):
         s, _, _ = self.call("POST", "/api/convert-file", b"MZ", {"X-Almanackify": "1", "X-Filename": "evil.exe"})
         self.assertEqual(s, 400)
 
+    def test_idea_card_endpoint_serves_a_png(self):
+        s, _, raw = self.call("POST", "/api/convert", {"text": TEXT, "title": "Demo", "formats": ["epub"]}, self.JSON)
+        res = json.loads(raw)
+        if not res["boxes"]:
+            self.skipTest("el texto de prueba no produjo cajitas")
+        s, ct, data = self.call("GET", f"/files/{res['job']}/card-0.png")
+        self.assertEqual(s, 200)
+        self.assertEqual(ct, "image/png")
+        self.assertEqual(data[:4], b"\x89PNG")
+        s, _, _ = self.call("GET", f"/files/{res['job']}/card-99.png")
+        self.assertEqual(s, 404)
+
     def test_path_traversal_is_blocked(self):
         for p in ("/files/../../etc/hosts", "/files/..%2F..%2Fetc%2Fhosts", "/files/abc/../../x"):
             s, _, _ = self.call("GET", p)

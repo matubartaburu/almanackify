@@ -63,12 +63,30 @@ class EpubForKindle(unittest.TestCase):
         ]}]}
         self.assertEqual(render._cover_quote(book), "Your goodness must have some edge to it, else it is none.")
 
+    def test_idea_card_is_a_16_9_png(self):
+        import pymupdf
+
+        png = render.make_card("Trust thyself: every heart vibrates to that iron string.", "Self-Reliance", "Ralph Waldo Emerson")
+        self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n")
+        pix = pymupdf.Pixmap(png)
+        self.assertAlmostEqual(pix.width / pix.height, 16 / 9, delta=0.02)
+        self.assertGreaterEqual(pix.width, 1200)
+
     def test_every_manifest_item_exists_in_the_zip(self):
         z = build_epub()
         opf = z.read("EPUB/content.opf").decode()
         names = set(z.namelist())
         for href in re.findall(r'<item[^>]*href="([^"]+)"', opf):
             self.assertIn("EPUB/" + href, names, href)
+
+    def test_reading_starts_at_the_title_page_not_the_contents_page(self):
+        z = build_epub()
+        opf = z.read("EPUB/content.opf").decode()
+        spine = re.search(r"<spine[^>]*>(.*?)</spine>", opf, re.S).group(1)
+        refs = re.findall(r"<itemref ([^>]*)/>", spine)
+        self.assertNotIn('idref="nav"', spine)  # el TOC sigue en el manifiesto, pero no es una página de lectura
+        self.assertIn('idref="titlepage"', refs[0])
+        self.assertTrue(all("linear" not in r for r in refs))  # sin contenido "no lineal" (epubcheck OPF-096)
 
     def test_document_language_and_metadata(self):
         z = build_epub()

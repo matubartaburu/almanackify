@@ -75,6 +75,8 @@ def main():
             for href in links or []:
                 data = urllib.request.urlopen(href).read()
                 checks[f"download {href.rsplit('.', 1)[-1]}"] = data[:2] == b"PK" if href.endswith("epub") else data[:4] == b"%PDF"
+            card = page.js("document.querySelector('.idea .save').href")
+            checks["idea card is a PNG"] = urllib.request.urlopen(card).read()[:4] == b"\x89PNG"
             time.sleep(1)
             if a.shot:
                 import base64

@@ -139,6 +139,33 @@ def make_cover(book: dict) -> bytes:
     return page.get_pixmap(dpi=256).tobytes("jpeg")
 
 
+def make_card(text: str, title: str = "", author: str = "") -> bytes:
+    """Tarjeta para compartir una idea (PNG 16:9, formato de X): la cajita gris con su fuente."""
+    import pymupdf
+    from weasyprint import HTML
+
+    faces = "".join(
+        f'@font-face {{ font-family: "EB Garamond"; src: url("{(STATIC_FONT_DIR / f"EBGaramond-{n}.ttf").as_uri()}"); '
+        f"font-weight: {w}; font-style: {s}; }}\n" for n, w, s in STATIC_FONTS
+        if (STATIC_FONT_DIR / f"EBGaramond-{n}.ttf").exists()
+    )
+    size = 54 if len(text) <= 80 else 44 if len(text) <= 140 else 36
+    src = ", ".join(x for x in (title, author) if x)
+    doc = f"""<!doctype html><html><head><meta charset="utf-8"><style>
+    {faces}
+    @page {{ size: 1200px 675px; margin: 0; }}
+    html, body {{ margin: 0; background: #fff; }}
+    .c {{ box-sizing: border-box; width: 1200px; height: 675px; padding: 70px 80px; font-family: {FONT_STACK}; color: #111;
+          display: flex; flex-direction: column; justify-content: space-between; }}
+    .box {{ background: #ddd; padding: 56px 60px; font-size: {size}px; line-height: 1.28; }}
+    .src {{ font-size: 24px; margin-top: 26px; }}
+    .tag {{ font-size: 15px; letter-spacing: .24em; text-transform: uppercase; }}
+    </style></head><body><div class="c"><div class="tag">Almanackify</div>
+    <div><div class="box">{inline(text)}</div><div class="src">{html.escape(src)}</div></div><div></div></div></body></html>"""
+    page = pymupdf.open(stream=HTML(string=doc).write_pdf(), filetype="pdf")[0]
+    return page.get_pixmap(dpi=144).tobytes("png")
+
+
 def to_epub(book: dict, path: str, embed_font: bool = True) -> str:
     from ebooklib import epub
 
@@ -163,7 +190,7 @@ def to_epub(book: dict, path: str, embed_font: bool = True) -> str:
     eb.set_cover("images/cover.jpg", make_cover(book), create_page=False)
 
     items = []
-    tp = epub.EpubHtml(title=book["title"], file_name="title.xhtml", lang=lang)
+    tp = epub.EpubHtml(uid="titlepage", title=book["title"], file_name="title.xhtml", lang=lang)
     tp.content = _title_html(book)
     tp.add_item(css)
     eb.add_item(tp)
@@ -177,7 +204,7 @@ def to_epub(book: dict, path: str, embed_font: bool = True) -> str:
     eb.toc = tuple(items[1:])
     eb.add_item(epub.EpubNcx())
     eb.add_item(epub.EpubNav())
-    eb.spine = ["nav"] + items
+    eb.spine = items  # el nav.xhtml queda en el manifiesto (TOC del Kindle) pero fuera del orden de lectura
     epub.write_epub(path, eb, {})
     return path
 

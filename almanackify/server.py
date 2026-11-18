@@ -78,6 +78,12 @@ class Handler(BaseHTTPRequestHandler):
         m = re.fullmatch(r"/fonts/(EBGaramond-(?:Regular|Bold|Italic|BoldItalic)\.ttf)", path)
         if m and (render.STATIC_FONT_DIR / m.group(1)).is_file():
             return self._send(200, (render.STATIC_FONT_DIR / m.group(1)).read_bytes(), "font/ttf")
+        m = re.fullmatch(r"/files/([0-9a-f]{12})/card-(\d{1,2})\.png", path)
+        if m:
+            card = self._card(self.server.jobs_dir / m.group(1), int(m.group(2)))
+            if card:
+                return self._send(200, card, "image/png", {"Content-Disposition": f'attachment; filename="idea-{int(m.group(2)) + 1}.png"'})
+            return self._error(404, "No encontrado")
         m = re.fullmatch(r"/files/([^/]+)/([^/]+)", path)
         if m and JOB_RE.match(m.group(1)) and NAME_RE.match(m.group(2)):
             f = self.server.jobs_dir / m.group(1) / m.group(2)
@@ -85,6 +91,22 @@ class Handler(BaseHTTPRequestHandler):
                 ctype = MIME.get(f.suffix.lower(), "application/octet-stream")
                 return self._send(200, f.read_bytes(), ctype, {"Content-Disposition": f'attachment; filename="{f.name}"'})
         return self._error(404, "No encontrado")
+
+    def _card(self, job_dir: Path, i: int) -> bytes | None:
+        """PNG de la i-ésima cajita del libro de ese trabajo (se genera una vez y queda en caché)."""
+        out = job_dir / f"card-{i}.png"
+        if out.is_file():
+            return out.read_bytes()
+        js = sorted(job_dir.glob("*.json"))
+        if not js:
+            return None
+        book = json.loads(js[0].read_text(encoding="utf8"))
+        boxes = [b["text"] for c in book["chapters"] for b in c["blocks"] if b["type"] == "tweet"]
+        if i >= len(boxes):
+            return None
+        png = render.make_card(boxes[i], book.get("title", ""), book.get("author", ""))
+        out.write_bytes(png)
+        return png
 
     # ---- POST ----------------------------------------------------------
     def do_POST(self):

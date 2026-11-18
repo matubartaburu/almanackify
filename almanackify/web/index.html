@@ -87,7 +87,11 @@ details.kindle summary { cursor: pointer; color: var(--fg); font-weight: 500; }
 details.kindle ol { margin: 12px 0 0; padding-left: 20px; } details.kindle li { margin: 6px 0; }
 .ideas { margin-top: 40px; }
 .ideas h3 { font: 500 12px var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--mute); margin: 0 0 14px; }
-.idea { background: var(--box); padding: 16px 18px; margin: 0 0 12px; font-size: 20px; line-height: 1.35; }
+.idea { background: var(--box); padding: 16px 18px 12px; margin: 0 0 12px; font-size: 20px; line-height: 1.35; }
+.idea p { margin: 0; }
+.idea .save { display: inline-block; margin-top: 10px; font: 500 12.5px var(--sans); color: var(--mute); text-decoration: none; opacity: 0; transition: opacity .15s; }
+.idea:hover .save, .idea .save:focus-visible { opacity: 1; } .idea .save:hover { color: var(--fg); }
+@media (hover: none) { .idea .save { opacity: 1; } }
 
 .local { display: none; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; font-family: var(--sans); font-size: 15px; color: var(--mute); }
 .local.on { display: block; }
@@ -271,7 +275,12 @@ function show(d) {
     el.className = "btn" + (k === "pdf" && d.files.epub ? " ghost" : ""); el.href = d.files[k]; el.textContent = label + " ↓"; a.append(el);
   }
   const ideas = $("r-ideas"); ideas.textContent = "";
-  for (const t of d.boxes.slice(0, 5)) { const p = document.createElement("p"); p.className = "idea"; p.textContent = t; ideas.append(p); }
+  d.boxes.slice(0, 5).forEach((t, i) => {
+    const box = document.createElement("div"); box.className = "idea";
+    const p = document.createElement("p"); p.textContent = t;
+    const a = document.createElement("a"); a.className = "save"; a.href = `/files/${d.job}/card-${i}.png`; a.textContent = "Save as image ↓";
+    box.append(p, a); ideas.append(box);
+  });
   $("result").classList.add("on");
   $("result").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 }
