@@ -27,7 +27,7 @@ Almanackify does that to text you already have.
 
 ## Quick start
 
-    git clone <this repo> && cd almanackify
+    git clone https://github.com/matubartaburu/almanackify && cd almanackify
     python3 -m venv .venv && source .venv/bin/activate
     pip install .                          # WeasyPrint needs Pango (macOS: brew install pango)
 
@@ -109,6 +109,10 @@ your browser), checks the `Host` header, and only listens on `127.0.0.1`.
 - Converting a YouTube link uses its transcript; auto-generated captions have no punctuation and give worse results. This path
   and article extraction depend on the network and on the site, and are the least tested.
 - Do not publish converted text you do not have the right to share. The examples in this repo are public domain.
+
+## License
+
+MIT, see `LICENSE`. The EB Garamond font keeps its own license (SIL OFL 1.1). The sample books are public-domain texts.
 
 ## Credits
 
