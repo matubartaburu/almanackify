@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "almanackify"
+version = "0.1.0"
+description = "Turn any article, book or transcript into a pocket Almanack: short paragraphs, bold questions, idea boxes. EPUB for Kindle."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pymupdf",
+  "ebooklib",
+  "beautifulsoup4",
+  "lxml",
+  "weasyprint",
+  "scikit-learn",
+  "numpy",
+  "trafilatura",
+  "youtube-transcript-api",
+  "mcp",
+  "fonttools",
+]
+
+[project.scripts]
+almanackify = "almanackify.__main__:main"
+almanackify-server = "almanackify.server:main"
+
+[tool.setuptools.packages.find]
+include = ["almanackify*"]
+
+[tool.setuptools.package-data]
+almanackify = ["web/*.html", "fonts/*.ttf", "fonts/static/*.ttf", "fonts/OFL.txt"]

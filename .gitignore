@@ -5,3 +5,7 @@ salida/
 out/
 .DS_Store
 examples/*.json
+build/
+*.egg-info/
+dist/
+launch/
