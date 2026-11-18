@@ -50,8 +50,8 @@ class Handler(BaseHTTPRequestHandler):
     def _json(self, status: int, obj: dict):
         self._send(status, json.dumps(obj, ensure_ascii=False).encode("utf8"), "application/json; charset=utf-8")
 
-    def _error(self, status: int, msg: str):
-        self._json(status, {"error": msg})
+    def _error(self, status: int, msg: str, code: str | None = None):
+        self._json(status, {"error": msg, **({"code": code} if code else {})})
 
     def _host_ok(self) -> bool:
         port = self.server.server_address[1]
@@ -69,7 +69,7 @@ class Handler(BaseHTTPRequestHandler):
     # ---- GET -----------------------------------------------------------
     def do_GET(self):
         if not self._host_ok():
-            return self._error(403, "Host no permitido")
+            return self._error(403, "Host not allowed")
         path = urllib.parse.unquote(urllib.parse.urlsplit(self.path).path)
         if path in ("/", "/index.html"):
             return self._send(200, (WEB_DIR / "index.html").read_bytes(), "text/html; charset=utf-8")
@@ -89,14 +89,14 @@ class Handler(BaseHTTPRequestHandler):
             card = self._card(self.server.jobs_dir / m.group(1), int(m.group(2)))
             if card:
                 return self._send(200, card, "image/png", {"Content-Disposition": f'attachment; filename="idea-{int(m.group(2)) + 1}.png"'})
-            return self._error(404, "No encontrado")
+            return self._error(404, "Not found")
         m = re.fullmatch(r"/files/([^/]+)/([^/]+)", path)
         if m and JOB_RE.match(m.group(1)) and NAME_RE.match(m.group(2)):
             f = self.server.jobs_dir / m.group(1) / m.group(2)
             if f.is_file():
                 ctype = MIME.get(f.suffix.lower(), "application/octet-stream")
                 return self._send(200, f.read_bytes(), ctype, {"Content-Disposition": f'attachment; filename="{f.name}"'})
-        return self._error(404, "No encontrado")
+        return self._error(404, "Not found")
 
     def _shelf(self, limit: int = 6) -> list[dict]:
         """Los últimos libros convertidos (el más nuevo primero), con portada, cajitas y archivos."""
@@ -138,9 +138,9 @@ class Handler(BaseHTTPRequestHandler):
     # ---- POST ----------------------------------------------------------
     def do_POST(self):
         if not self._host_ok():
-            return self._error(403, "Host no permitido")
+            return self._error(403, "Host not allowed")
         if self.headers.get("X-Almanackify") != "1":  # fuerza preflight CORS: otras páginas no pueden llamar a esta API
-            return self._error(403, "Falta la cabecera X-Almanackify")
+            return self._error(403, "Missing X-Almanackify header")
         url = urllib.parse.urlsplit(self.path)
         try:
             if url.path == "/api/convert":
@@ -148,15 +148,15 @@ class Handler(BaseHTTPRequestHandler):
             if url.path == "/api/convert-file":
                 return self._convert_file(urllib.parse.parse_qs(url.query))
         except ValueError as e:
-            return self._error(400, str(e))
+            return self._error(400, str(e), getattr(e, "code", None))
         except Exception as e:  # noqa: BLE001 - no filtrar trazas al navegador
-            return self._error(500, f"No pude convertirlo ({type(e).__name__}).")
-        return self._error(404, "No encontrado")
+            return self._error(500, f"Couldn't convert it ({type(e).__name__}).")
+        return self._error(404, "Not found")
 
     def _formats(self, raw) -> tuple:
         fm = tuple(f for f in (raw or FORMATS) if f in FORMATS)
         if not fm:
-            raise ValueError("Elegí EPUB, PDF o ambos.")
+            raise ValueError("Pick EPUB, PDF or both.")
         return fm
 
     def _options(self, o: dict) -> dict:
@@ -169,40 +169,40 @@ class Handler(BaseHTTPRequestHandler):
     def _convert_json(self):
         raw = self._read_body(MAX_BODY)
         if raw is None:
-            return self._error(413, "El texto es demasiado grande.")
+            return self._error(413, "The text is too large.")
         try:
             o = json.loads(raw or b"{}")
         except json.JSONDecodeError:
-            return self._error(400, "JSON inválido.")
+            return self._error(400, "Invalid JSON.")
         if not isinstance(o, dict):
-            return self._error(400, "JSON inválido.")
+            return self._error(400, "Invalid JSON.")
         source, text = str(o.get("source") or "").strip(), str(o.get("text") or "").strip()
         title, author = str(o.get("title") or "").strip()[:200], str(o.get("author") or "").strip()[:200]
         if source:
             if not re.fullmatch(r"https?://\S+", source):
-                raise ValueError("Pegá un link que empiece con http:// o https://.")
+                raise ValueError("Paste a link that starts with http:// or https://.")
             book = extract.load(source, title=title or None, author=author or None)
         elif text:
             if len(text.split()) < 20:
-                raise ValueError("Pegá un texto más largo (mínimo ~20 palabras).")
+                raise ValueError("Paste a longer text (at least ~20 words).")
             book = extract.from_text(text, title=title or "Text")
             book["lang"] = book.get("lang") or extract.detect_lang(text)
             if author:
                 book["author"] = author
         else:
-            raise ValueError("Pegá un link o un texto.")
+            raise ValueError("Paste a link or some text.")
         self._finish(book, self._formats(o.get("formats")), self._options(o))
 
     def _convert_file(self, query: dict):
         n = int(self.headers.get("Content-Length", "0") or 0)
         name = Path(urllib.parse.unquote(self.headers.get("X-Filename", ""))).name
         if Path(name).suffix.lower() not in UPLOAD_EXT:
-            raise ValueError("Formato no soportado. Subí .epub, .pdf, .txt, .md, .srt o .vtt.")
+            raise ValueError("Unsupported format. Upload .epub, .pdf, .txt, .md, .srt or .vtt.")
         if n > MAX_UPLOAD:
-            return self._error(413, "El archivo es demasiado grande (máx. 60 MB).")
+            return self._error(413, "The file is too large (60 MB max).")
         data = self._read_body(MAX_UPLOAD)
         if not data:
-            raise ValueError("El archivo está vacío.")
+            raise ValueError("The file is empty.")
         job = uuid.uuid4().hex[:12]
         up = self.server.jobs_dir / job / "upload"
         up.mkdir(parents=True)
@@ -231,7 +231,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def make_server(host: str = "127.0.0.1", port: int = 8742, jobs_dir=None) -> ThreadingHTTPServer:
     if host not in ("127.0.0.1", "localhost", "::1"):
-        raise ValueError("Por seguridad el servidor solo escucha en localhost.")
+        raise ValueError("For safety the server only listens on localhost.")
     srv = ThreadingHTTPServer((host, port), Handler)
     srv.jobs_dir = Path(jobs_dir).expanduser() if jobs_dir else DEFAULT_JOBS
     srv.jobs_dir.mkdir(parents=True, exist_ok=True)

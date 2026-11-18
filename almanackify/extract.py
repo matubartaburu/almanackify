@@ -30,6 +30,13 @@ TERMINATORS = ".!?…:;\"”»)’'"
 # ----------------------------------------------------------------------------
 # utilidades
 # ----------------------------------------------------------------------------
+class SourceError(ValueError):
+    """Error de una fuente (link, archivo) con un código para que la interfaz pueda reaccionar."""
+    def __init__(self, msg: str, code: str | None = None):
+        super().__init__(msg)
+        self.code = code
+
+
 def _noast(text: str) -> str:
     return text.replace("*", "∗")
 
@@ -102,7 +109,7 @@ def _finalize(book: dict, min_words: int = 40, skip_titles: bool = True) -> dict
             continue
         chapters.append(ch)
     if not chapters:
-        raise ValueError("No se pudo extraer texto del documento (¿está escaneado? haría falta OCR).")
+        raise ValueError("Couldn't extract text from that document (is it a scan? it would need OCR).")
     book["chapters"] = chapters
     if not book.get("lang"):
         book["lang"] = detect_lang(" ".join(" ".join(c["paragraphs"]) for c in chapters[:6]))
@@ -221,7 +228,7 @@ def from_pdf(path: str) -> dict:
                 size_chars[size] += chars
         pages.append({"H": H, "W": page.rect.width, "lines": lines})
     if not size_chars:
-        raise ValueError("El PDF no tiene texto (¿escaneado? haría falta OCR).")
+        raise ValueError("That PDF has no text (is it a scan? it would need OCR).")
     body_size = size_chars.most_common(1)[0][0]
 
     # encabezados/pies repetidos y números de página
@@ -246,7 +253,7 @@ def from_pdf(path: str) -> dict:
 
     body_lines = [ln for p in pages for ln in p["lines"] if abs(ln["size"] - body_size) < 0.6 and not is_noise(ln, p)]
     if not body_lines:
-        raise ValueError("No se encontró texto de cuerpo en el PDF.")
+        raise ValueError("Couldn't find body text in that PDF.")
     lefts = Counter(round(ln["x0"] / 2) * 2 for ln in body_lines)
     left = lefts.most_common(1)[0][0]
     heights = [ln["y1"] - ln["y0"] for ln in body_lines]
@@ -358,11 +365,11 @@ def from_url(url: str) -> dict:
 
     downloaded = trafilatura.fetch_url(url)
     if not downloaded:
-        raise ValueError("No pude descargar la página (¿bloqueada o sin conexión?).")
+        raise SourceError("Couldn't download that page (blocked, or no connection?).", code="page_unreachable")
     md = trafilatura.extract(downloaded, output_format="markdown", include_comments=False, include_tables=False)
     md = _noast(strip_footnote_marks(strip_code_fences(md))) if md else md
     if not md:
-        raise ValueError("No pude extraer el texto principal de la página.")
+        raise SourceError("Couldn't find the main text of that page.", code="page_no_text")
     meta = trafilatura.extract_metadata(downloaded)
     title = (meta.title if meta and meta.title else url)
     author = meta.author if meta and meta.author else ""
@@ -394,11 +401,18 @@ def from_youtube(url: str, languages: tuple = ("es", "en")) -> dict:
 
     vid = _youtube_id(url)
     if not vid:
-        raise ValueError("No pude identificar el ID del video de YouTube.")
+        raise SourceError("Couldn't find the video ID in that link.", code="youtube_bad_url")
     try:
         fetched = YouTubeTranscriptApi().fetch(vid, languages=list(languages))
     except Exception as e:  # noqa: BLE001
-        raise ValueError(f"No pude bajar la transcripción de YouTube ({type(e).__name__}). Pegá la transcripción como texto.") from e
+        name = type(e).__name__
+        if name in ("TranscriptsDisabled", "NoTranscriptFound", "NoTranscriptAvailable"):
+            raise SourceError("This video has no transcript available (captions are off or not in Spanish/English). "
+                              "Try another video, or paste the text in the Text tab.", code="youtube_no_transcript") from e
+        if isinstance(e, OSError) or "Connection" in name or "Timeout" in name or "Proxy" in name:
+            raise SourceError(f"Couldn't reach YouTube from this computer ({name}). Open the video, choose “Show transcript”, "
+                              "copy it and paste it in the Text tab.", code="youtube_unreachable") from e
+        raise SourceError(f"Couldn't fetch the YouTube transcript ({name}). Paste the text in the Text tab instead.", code="youtube_error") from e
     snippets = fetched.to_raw_data() if hasattr(fetched, "to_raw_data") else list(fetched)
     title, author = f"Video {vid}", ""
     try:
@@ -426,12 +440,14 @@ def from_youtube(url: str, languages: tuple = ("es", "en")) -> dict:
     if cur:
         paras.append((" ".join(cur), last_end))
 
+    lang = detect_lang(" ".join(t for t, _ in paras[:30]))
+    part = "Parte" if lang in ("es", "pt") else "Part"
     chapters, ch, ch_words, start = [], None, 0, 0.0
     for text, t in paras:
         if ch is None or ch_words > 1500:
             if ch is not None:
                 start = t
-            ch = _new_chapter(f"Parte {len(chapters) + 1} · {int(start // 60)}:{int(start % 60):02d}")
+            ch = _new_chapter(f"{part} {len(chapters) + 1} · {int(start // 60)}:{int(start % 60):02d}")
             chapters.append(ch)
             ch_words = 0
         ch["paragraphs"].append(text)
@@ -462,11 +478,11 @@ def load(source: str, title: str | None = None, author: str | None = None, lang:
                     raw = re.sub(r"^\d+\s*$|^\d{2}:\d{2}.*-->.*$|^WEBVTT.*$", " ", raw, flags=re.M)
                 book = from_text(raw, title=p.stem)
             else:
-                raise ValueError(f"Formato no soportado: {ext}")
+                raise ValueError(f"Unsupported format: {ext}")
         elif "\n" in s or len(s.split()) > 30:
             book = from_text(s, title=title or "Texto")
         else:
-            raise ValueError(f"No encontré el archivo: {s}")
+            raise ValueError(f"File not found: {s}")
     if title:
         book["title"] = title
     if author:

@@ -427,13 +427,16 @@ $("form").onsubmit = async (e) => {
   if (mode === "file") { fileState.status = "busy"; renderFile(); }
   try {
     const r = await req, data = await r.json();
-    if (!r.ok) throw new Error(data.error || "Something went wrong.");
+    if (!r.ok) { const er = new Error(data.error || "Something went wrong."); er.code = data.code; throw er; }
     if (mode === "file") { fileState.status = "done"; fileState.detail = `${data.stats.boxes} idea boxes`; renderFile(); }
     show(data);
   } catch (ex) {
     if (ex.name === "AbortError") return;  // el usuario canceló o cambió de archivo
     if (mode === "file" && fileState) { Object.assign(fileState, { status: "error", error: ex.message, retriable: true }); renderFile(); }
-    else $("err").textContent = ex.message;
+    else {
+      $("err").textContent = ex.message;
+      if (ex.code === "youtube_unreachable" || ex.code === "youtube_no_transcript") { setMode("text"); $("err").textContent = ex.message; $("in-text").focus(); }  // lleva al usuario donde puede seguir
+    }
   }
   finally { stepper(false); syncGo(); }
 };
