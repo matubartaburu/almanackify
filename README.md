@@ -51,7 +51,7 @@ Paste a link, drop a file or paste text. You get a cover, the EPUB/PDF, and each
     claude mcp add almanackify -- python -m almanackify.mcp_server
 
 Tools: `almanackify`, `almanackify_extract` (structure only, so Claude can write the boxes) and `almanackify_render`.
-Files go to `~/Almanackify` by default.
+Files go to `~/Documents/Almanackify` by default (the web interface keeps its working files in `~/.almanackify/web`).
 
 ## Reading on a Kindle
 
@@ -90,4 +90,4 @@ your browser), checks the `Host` header, and only listens on `127.0.0.1`.
 ## Credits
 
 - **EB Garamond** by The EB Garamond Project Authors, SIL Open Font License 1.1 (`almanackify/fonts/OFL.txt`).
-- Interface inspired by hero and stepper patterns found on [21st.dev](https://21st.dev); no component code was copied.
+- Interface patterns from [21st.dev](https://21st.dev), rewritten in plain CSS and JS: the vertical titled stepper (by sean0205), and the behavior of a "File Upload" component (a row for every file, rejected ones included; a drag counter that does not flicker). The DevTool Landing Page (by mokshithgujjeti) was studied for the walkthrough idea.

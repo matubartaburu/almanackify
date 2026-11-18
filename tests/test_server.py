@@ -115,6 +115,27 @@ class Api(unittest.TestCase):
         s, _, _ = self.call("GET", f"/files/{res['job']}/card-99.png")
         self.assertEqual(s, 404)
 
+    def test_shelf_lists_converted_books_newest_first(self):
+        ids = []
+        for title in ("Shelf One", "Shelf Two"):
+            s, _, raw = self.call("POST", "/api/convert", {"text": TEXT, "title": title, "formats": ["epub"]}, self.JSON)
+            self.assertEqual(s, 200)
+            ids.append(json.loads(raw)["job"])
+        s, ct, raw = self.call("GET", "/api/shelf")
+        self.assertEqual(s, 200)
+        self.assertIn("json", ct)
+        books = json.loads(raw)["books"]
+        self.assertEqual([b["job"] for b in books[:2]], ids[::-1])
+        first = books[0]
+        self.assertEqual(first["title"], "Shelf Two")
+        self.assertIn("epub", first["files"])
+        s, ct, data = self.call("GET", first["cover"])
+        self.assertEqual((s, ct, data[:2]), (200, "image/jpeg", b"\xff\xd8"))
+
+    def test_shelf_respects_the_host_check(self):
+        s, _, _ = self.call("GET", "/api/shelf", host="evil.example")
+        self.assertEqual(s, 403)
+
     def test_path_traversal_is_blocked(self):
         for p in ("/files/../../etc/hosts", "/files/..%2F..%2Fetc%2Fhosts", "/files/abc/../../x"):
             s, _, _ = self.call("GET", p)

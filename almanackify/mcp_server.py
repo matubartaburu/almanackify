@@ -19,7 +19,7 @@ except ImportError:  # mcp 1.x
 from . import core, extract
 
 mcp = FastMCP("almanackify")
-DEFAULT_OUT = "~/Almanackify"
+DEFAULT_OUT = "~/Documents/Almanackify"
 
 
 @mcp.tool()

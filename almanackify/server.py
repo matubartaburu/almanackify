@@ -19,7 +19,7 @@ from pathlib import Path
 from . import core, extract, render
 
 WEB_DIR = Path(__file__).parent / "web"
-DEFAULT_JOBS = Path("~/Almanackify/web").expanduser()
+DEFAULT_JOBS = Path("~/.almanackify/web").expanduser()  # fuera del repo y de la carpeta de salida visible
 MAX_BODY = 2 * 1024 * 1024  # JSON / texto pegado
 MAX_UPLOAD = 60 * 1024 * 1024
 UPLOAD_EXT = {".epub", ".pdf", ".txt", ".md", ".srt", ".vtt"}
@@ -75,6 +75,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, (WEB_DIR / "index.html").read_bytes(), "text/html; charset=utf-8")
         if path == "/api/health":
             return self._json(200, {"ok": True})
+        if path == "/api/shelf":
+            return self._json(200, {"books": self._shelf()})
         m = re.fullmatch(r"/fonts/(EBGaramond-(?:Regular|Bold|Italic|BoldItalic)\.ttf)", path)
         if m and (render.STATIC_FONT_DIR / m.group(1)).is_file():
             return self._send(200, (render.STATIC_FONT_DIR / m.group(1)).read_bytes(), "font/ttf")
@@ -91,6 +93,27 @@ class Handler(BaseHTTPRequestHandler):
                 ctype = MIME.get(f.suffix.lower(), "application/octet-stream")
                 return self._send(200, f.read_bytes(), ctype, {"Content-Disposition": f'attachment; filename="{f.name}"'})
         return self._error(404, "No encontrado")
+
+    def _shelf(self, limit: int = 6) -> list[dict]:
+        """Los últimos libros convertidos (el más nuevo primero), con portada, cajitas y archivos."""
+        found = []
+        for d in self.server.jobs_dir.iterdir():
+            js = sorted(d.glob("*.json")) if d.is_dir() and JOB_RE.match(d.name) else []
+            if js:
+                found.append((js[0].stat().st_mtime, d, js[0]))
+        books = []
+        for _, d, jp in sorted(found, key=lambda t: t[0], reverse=True)[:limit]:
+            try:
+                book = json.loads(jp.read_text(encoding="utf8"))
+                if not (d / "cover.jpg").is_file():  # los trabajos solo-PDF no tienen portada: se genera una vez
+                    (d / "cover.jpg").write_bytes(render.make_cover(book))
+            except Exception:  # noqa: BLE001 - un trabajo dañado no rompe la repisa
+                continue
+            boxes = [b["text"] for c in book["chapters"] for b in c["blocks"] if b["type"] == "tweet"]
+            files = {p.suffix[1:]: f"/files/{d.name}/{p.name}" for p in sorted(d.iterdir()) if p.suffix in (".epub", ".pdf")}
+            books.append({"job": d.name, "title": book.get("title", ""), "author": book.get("author", ""), "lang": book.get("lang", ""),
+                          "stats": book.get("stats", {}), "cover": f"/files/{d.name}/cover.jpg", "boxes": boxes[:6], "files": files})
+        return books
 
     def _card(self, job_dir: Path, i: int) -> bytes | None:
         """PNG de la i-ésima cajita del libro de ese trabajo (se genera una vez y queda en caché)."""
@@ -198,7 +221,7 @@ class Handler(BaseHTTPRequestHandler):
             with zipfile.ZipFile(res["files"]["epub"]) as z:
                 (out / "cover.jpg").write_bytes(z.read("EPUB/images/cover.jpg"))
             files["cover"] = f"/files/{job}/cover.jpg"
-        self._json(200, {"job": job, "title": res["title"], "lang": res["lang"], "stats": res["stats"],
+        self._json(200, {"job": job, "title": res["title"], "author": book.get("author", ""), "lang": res["lang"], "stats": res["stats"],
                          "files": files, "boxes": boxes[:8]})
 
 
