@@ -19,6 +19,14 @@ class FootnoteMarks(unittest.TestCase):
         self.assertIn("[sic]", extract.strip_footnote_marks("He wrote [sic] twice."))
 
 
+class CodeFences(unittest.TestCase):
+    def test_fence_markers_are_removed_but_text_is_kept(self):
+        out = extract.strip_code_fences("```\n``` Ne te quaesiveris extra.\n\nOur acts our angels are.")
+        self.assertNotIn("```", out)
+        self.assertIn("Ne te quaesiveris extra.", out)
+        self.assertIn("Our acts our angels are.", out)
+
+
 class StandaloneBoxes(unittest.TestCase):
     def test_sentence_pointing_back_is_not_a_box(self):
         s = "Learning, for example, is an instance of this phenomenon: the more you learn about something, the easier it is to learn more."

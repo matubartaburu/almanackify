@@ -39,6 +39,11 @@ def _clean(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def strip_code_fences(text: str) -> str:
+    """Quita los ``` que deja el extractor en epígrafes y versos (se conserva el texto)."""
+    return text.replace("```", "")
+
+
 _FOOTNOTE = re.compile(r"\s*\\?\[\s*\d{1,3}\s*\\?\]")
 
 
@@ -340,7 +345,7 @@ def from_url(url: str) -> dict:
     if not downloaded:
         raise ValueError("No pude descargar la página (¿bloqueada o sin conexión?).")
     md = trafilatura.extract(downloaded, output_format="markdown", include_comments=False, include_tables=False)
-    md = _noast(strip_footnote_marks(md)) if md else md
+    md = _noast(strip_footnote_marks(strip_code_fences(md))) if md else md
     if not md:
         raise ValueError("No pude extraer el texto principal de la página.")
     meta = trafilatura.extract_metadata(downloaded)

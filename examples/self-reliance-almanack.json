@@ -12,11 +12,7 @@
     },
     {
      "type": "p",
-     "text": "```"
-    },
-    {
-     "type": "p",
-     "text": "``` Ne te quaesiveris extra."
+     "text": "Ne te quaesiveris extra."
     },
     {
      "type": "p",
@@ -1202,7 +1198,7 @@
  ],
  "stats": {
   "chapters": 1,
-  "words": 10126,
+  "words": 10124,
   "boxes": 37,
   "chains": 1
  }

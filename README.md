@@ -2,16 +2,16 @@
 
 Turn anything you read into a pocket Almanack.
 
-Paste a link, a transcript or a book. Get short paragraphs, bold questions, gray idea boxes and a ↓ chain that sums up each
-chapter, as an **EPUB made for your Kindle** (and a PDF).
+Paste a link, a transcript or a book. Get short paragraphs, gray idea boxes and a ↓ chain that sums up each chapter, as an
+**EPUB made for your Kindle** (and a PDF).
 
 The format is inspired by *The Almanack of Naval Ravikant* (Eric Jorgenson). This project is not affiliated with or endorsed by
 the book, its author or Naval Ravikant.
 
 ## Why
 
-Some books read lighter when the pages breathe: one idea per paragraph, the question the author is answering in bold, and the
-sentence worth remembering pulled out in a box. Almanackify does that to text you already have.
+Some books read lighter when the pages breathe: short paragraphs and the sentence worth remembering pulled out in a box.
+Almanackify does that to text you already have.
 
 ## How it works
 
@@ -21,6 +21,8 @@ sentence worth remembering pulled out in a box. Almanackify does that to text yo
   earlier text ("this phenomenon", "such lines", "for example…") and list fragments ("Fourthly, …") are skipped.
 - **Trade-off:** script-picked boxes are less sharp than ones written by a person or a model. For that, there is a hybrid mode
   (see MCP below): Claude writes the boxes into a JSON and the script only renders it.
+- **Questions in bold:** the tool does not invent questions. They stay in bold when the source already marks them, and in
+  hybrid mode Claude can add them.
 - **Output:** EPUB (Kindle) and PDF (5.5 × 8.5 in, EB Garamond).
 
 ## Quick start
