@@ -27,6 +27,25 @@ class CodeFences(unittest.TestCase):
         self.assertIn("Our acts our angels are.", out)
 
 
+class ArchiveBoilerplate(unittest.TestCase):
+    NOTICE = [
+        "This book was produced in EPUB format by the Internet Archive.",
+        "The book pages were scanned and converted to EPUB format automatically. This process relies on optical character recognition, and is somewhat susceptible to errors.",
+        "The hidden page numbering which may be available to your ereader corresponds to the numbered pages in the print edition.",
+    ]
+
+    def test_internet_archive_scan_notice_is_dropped(self):
+        book = {"title": "T", "author": "", "lang": "en", "chapters": [
+            {"title": "T", "paragraphs": self.NOTICE + ["Advertising is salesmanship in print."]}]}
+        out = extract.drop_archive_boilerplate(book)
+        self.assertEqual(out["chapters"][0]["paragraphs"], ["Advertising is salesmanship in print."])
+
+    def test_the_same_words_deep_in_a_book_are_kept(self):
+        body = ["Intro one.", "Intro two."] * 10 + ["We use optical character recognition in this chapter."]
+        book = {"title": "T", "author": "", "lang": "en", "chapters": [{"title": "T", "paragraphs": body}]}
+        self.assertIn("We use optical character recognition in this chapter.", extract.drop_archive_boilerplate(book)["chapters"][0]["paragraphs"])
+
+
 class StandaloneBoxes(unittest.TestCase):
     def test_sentence_pointing_back_is_not_a_box(self):
         s = "Learning, for example, is an instance of this phenomenon: the more you learn about something, the easier it is to learn more."

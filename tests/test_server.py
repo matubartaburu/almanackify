@@ -155,7 +155,8 @@ class Api(unittest.TestCase):
             self.assertTrue(cover.is_file(), cover)
             self.assertLess(cover.stat().st_size, 60_000, cover)
             self.assertGreaterEqual(len(b["boxes"]), 1, b["title"])
-            self.assertTrue(b["source"].startswith("https://standardebooks.org/"), "solo dominio público")
+            self.assertTrue(b["source"].startswith(("https://standardebooks.org/", "https://archive.org/")), b["source"])
+            self.assertIn("public domain", b["license"], "los libros de muestra son solo de dominio público")
 
     def test_third_party_cover_is_never_tracked_by_git(self):
         import subprocess

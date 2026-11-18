@@ -39,6 +39,21 @@ def _clean(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+_ARCHIVE_NOTICE = re.compile(
+    r"produced in EPUB format by the Internet Archive|scanned and converted to EPUB|optical character recognition|"
+    r"hidden page numbering|Internet Archive is working to improve|stray marks on the page|headers or footers may remain",
+    re.I,
+)
+
+
+def drop_archive_boilerplate(book: dict) -> dict:
+    """Quita el aviso de escaneo que Internet Archive pone al inicio de sus EPUB (solo en los primeros párrafos)."""
+    for ch in book["chapters"][:1]:
+        head, tail = ch["paragraphs"][:12], ch["paragraphs"][12:]
+        ch["paragraphs"] = [p for p in head if not _ARCHIVE_NOTICE.search(p)] + tail
+    return book
+
+
 def strip_code_fences(text: str) -> str:
     """Quita los ``` que deja el extractor en epígrafes y versos (se conserva el texto)."""
     return text.replace("```", "")
@@ -170,7 +185,7 @@ def from_epub(path: str) -> dict:
                 cur["paragraphs"].append("**" + text.strip("*") + "**")
             else:
                 cur["paragraphs"].append(text)
-    return _finalize(out)
+    return drop_archive_boilerplate(_finalize(out))
 
 
 # ----------------------------------------------------------------------------

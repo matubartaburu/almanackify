@@ -80,7 +80,8 @@ def main():
         time.sleep(2.4)
         # la repisa 3D está desde el inicio, antes de convertir nada
         checks["shelf is on the page from the start"] = page.js("document.querySelectorAll('#shelf .b3').length") >= 2
-        checks["intro animation finished: every book fully visible"] = page.js("[...document.querySelectorAll('#shelf .b3')].every(b => getComputedStyle(b).opacity === '1')")
+        checks["intro animation finished: every book is inside the shelf"] = page.js("(() => { const r = document.getElementById('shelf').getBoundingClientRect(); return [...document.querySelectorAll('#shelf .b3')].every(b => { const q = b.getBoundingClientRect(); return q.top >= r.top - 8 && q.bottom <= r.bottom + 8; }); })()")
+        checks["intro never animates opacity (it would flatten the 3D books)"] = page.js("[...document.querySelectorAll('#shelf .b3')].every(b => !b.style.transition.includes('opacity') && b.style.opacity === '')")
         checks["shelf sits above the converter"] = page.js("document.getElementById('shelf').getBoundingClientRect().top < document.getElementById('tool').getBoundingClientRect().top")
         checks["no download panel while only sample books are active"] = page.js("(document.querySelector('#shelf .b3.active img').src || '').includes('/demo/') ? !document.getElementById('result').classList.contains('on') : true")
         if a.shots:

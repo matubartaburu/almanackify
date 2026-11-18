@@ -1,20 +1,21 @@
 [
  {
-  "slug": "self-reliance",
-  "title": "Self-Reliance",
-  "author": "Ralph Waldo Emerson",
-  "cover": "demo/self-reliance.jpg",
+  "slug": "scientific-advertising",
+  "title": "Scientific Advertising",
+  "author": "Claude C. Hopkins",
+  "cover": "demo/scientific-advertising.jpg",
   "boxes": [
-   "Nothing to him falls early or too late.",
-   "Not for nothing one face, one character, one fact, makes much impression on him, and another none."
+   "Advertising, once a gamble, has thus become, under able direction, one of the safest business ventures.",
+   "The present status of advertising is due to many reasons."
   ],
   "stats": {
    "chapters": 1,
-   "words": 10124,
-   "boxes": 37,
+   "words": 21757,
+   "boxes": 88,
    "chains": 1
   },
-  "source": "https://standardebooks.org/ebooks/ralph-waldo-emerson/essays/text/self-reliance"
+  "source": "https://archive.org/details/scientific-advertising",
+  "license": "public domain (US, published 1923)"
  },
  {
   "slug": "shortness-of-life",
@@ -31,7 +32,8 @@
    "boxes": 7,
    "chains": 0
   },
-  "source": "https://standardebooks.org/ebooks/seneca/dialogues/aubrey-stewart/text/on-the-shortness-of-life"
+  "source": "https://standardebooks.org/ebooks/seneca/dialogues/aubrey-stewart",
+  "license": "public domain"
  },
  {
   "slug": "walden",
@@ -48,7 +50,8 @@
    "boxes": 25,
    "chains": 1
   },
-  "source": "https://standardebooks.org/ebooks/henry-david-thoreau/walden/text/economy"
+  "source": "https://standardebooks.org/ebooks/henry-david-thoreau/walden",
+  "license": "public domain"
  },
  {
   "slug": "meditations-4",
@@ -65,6 +68,7 @@
    "boxes": 12,
    "chains": 1
   },
-  "source": "https://standardebooks.org/ebooks/marcus-aurelius/meditations/george-long/text/book-4"
+  "source": "https://standardebooks.org/ebooks/marcus-aurelius/meditations/george-long",
+  "license": "public domain"
  }
 ]
